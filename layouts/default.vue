@@ -9,8 +9,12 @@
           <li v-if="!authStore.user"><NuxtLink to="/login">Login</NuxtLink></li>
           <li v-else>
             <NuxtLink to="/chat">Chat</NuxtLink>
+           
+          </li>
+          <li>
             <button @click="logout" style="background: none; border: none; color: white; cursor: pointer;">Logout</button>
           </li>
+       
         </ul>
         <q-chip v-if="user">
         <q-avatar>

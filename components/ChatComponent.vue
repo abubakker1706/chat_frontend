@@ -188,11 +188,11 @@ const getMessageKey = (message) => {
   console.log(selectedChat.value.username, "receiver name");
 
   if (message.senderId === user.value.user_id) {
-    return user.value.username; // Current user sent the message
+    return user.value.username; 
   } else if (message.receiverId === user.value.user_id) {
-    return message.sender_name || selectedChat.value.username; // Current user received the message
+    return message.sender_name || selectedChat.value.username; 
   } else {
-    return message.sender_name || selectedChat.value.username; // Some other scenario (e.g., group chat)
+    return message.sender_name || selectedChat.value.username; 
   }
 };
 
@@ -238,6 +238,8 @@ const fetchUserData = async () => {
     console.error('Error fetching user data:', error);
   }
 };
+
+
 
 const startChat = async (user) => {
   selectedChat.value = user;

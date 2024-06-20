@@ -1,3 +1,5 @@
+// complelete working 1:1 
+
 <template>
      <SearchBar  :searchDialog="searchDialog" v-if="searchDialog" @update:searchDialog="closeSearch"  @user-selected="startChat"/>
     <div class="chat-container">
@@ -91,7 +93,7 @@
 
       <!-- Chat messages -->
       <div class="chat-body">
-        <div v-for="message in messages" :key="message.chat_id" :class="{'my-message': message.sender_id === user.user_id, 'other-message': message.sender_id!== user.user_id}">
+        <div v-for="message in messages" :key="message.id" :class="{'my-message': message.sender_id === user.user_id, 'other-message': message.sender_id!== user.user_id}">
           
              
           <q-avatar v-if="message.sender_id === user.user_id" color="primary" text-color="white" size="20px">
@@ -105,6 +107,7 @@
           <div class="message-content">
              
             <span>{{ message.message }}</span>
+            
           </div>
         </div>
       </div>
@@ -155,12 +158,42 @@ const user = ref(null);
 const fixed = ref(false);
 const groupData = ref([]);
 const onlineUsers = ref({});
-const url = `wss://7xd79lsle7.execute-api.eu-north-1.amazonaws.com/test`
-const socket = io(url, {
+
+const socket = io('http://localhost:8080', {
     auth: {
         token: `Bearer ${token.token}`
     }
 });
+
+
+function showNotification(message, senderId) {
+    if (Notification.permission === 'granted' && senderId !== user.value.user_id) {
+        new Notification('New Message', {
+            body: message,
+            icon: 'https://www.shutterstock.com/image-photo/hand-arranging-wood-block-healthcare-260nw-1561815367.jpg'
+        });
+    } else if (Notification.permission === 'default') {
+        requestNotificationPermission();
+    } else {
+        console.warn('Notification permission is denied or sender is current user');
+    }
+}
+
+function requestNotificationPermission() {
+  if (Notification.permission === 'granted') {
+    console.log('Notification permission already granted');
+  } else if (Notification.permission === 'denied') {
+    console.log('Notification permission previously denied');
+  } else {
+    Notification.requestPermission().then(function(permission) {
+      if (permission === 'granted') {
+        console.log('Notification permission granted');
+      } else {
+        console.warn('Notification permission denied');
+      }
+    });
+  }
+}
 
 const showMessageController =()=>{
   showMessage.value =!showMessage.value;
@@ -211,11 +244,14 @@ const fetchUserData = async () => {
         user.value = response.data;
         await getMessagedUsers(response.data);
         await getUserGroups(response.data);
-        socket.emit('join', response.data.user_id); // Join user room upon fetching user data
+        socket.emit('join', response.data.user_id); 
     } catch (error) {
         console.error('Error fetching user data:', error);
     }
 };
+
+
+
 
 const startChat = async (user) => {
     console.log(user, "startChat");
@@ -258,7 +294,6 @@ const fetchMessages = async () => {
         console.error('Error fetching messages:', error);
     }
 };
-
 const sendMessage = async () => {
     console.log('Current messages:', messages.value); 
     if (newMessage.value.trim() !== '' && selectedChat.value) {
@@ -267,6 +302,7 @@ const sendMessage = async () => {
                 receiverId: selectedChat.value.user_id,
                 message: newMessage.value,
                 senderId: user.value.user_id,
+                senderName: user.value.username,
             };
             const response = await axios.post(`http://localhost:8080/api/chat/send`, message, config);
             console.log(response.data.success, "response data for send message");
@@ -283,15 +319,18 @@ const sendMessage = async () => {
 };
 
 const handleTyping = () => {
+  console.log("Typing Started")
+  socket.emit('typing', { senderId: user.value.user_id, receiverId: selectedChat.value.user_id });
     if (typingTimeout.value) {
         clearTimeout(typingTimeout.value);
     }
-    socket.emit('typing', { receiverId: selectedChat.value.user_id });
+    
     typingTimeout.value = setTimeout(stopTyping, 3000);
 };
 
+
 const stopTyping = () => {
-    socket.emit('stop_typing', { receiverId: selectedChat.value.user_id });
+    socket.emit('stop_typing', { receiverId: selectedChat.value.user_id,senderId: user.value.user_id});
 };
 
 const getUserGroups = async (data) => {
@@ -305,27 +344,35 @@ const getUserGroups = async (data) => {
     }
 };
 
+
 onMounted(() => {
     fetchUserData();
+  
+   
     socket.on('receiveMessage', (message) => {
         console.log(message, "message from receive message");
         if (selectedChat.value && (message.sender_id === selectedChat.value.user_id || message.receiver_id === selectedChat.value.user_id)) {
             messages.value.push(message);
+            
         }
+        showNotification(`New message from ${message.sender_name}: ${message.message}`, message.sender_id);
     });
 
     socket.on('typing', (data) => {
-        if (selectedChat.value && data.sender_id === selectedChat.value.user_id) {
+      console.log(data, "typing data");
+        if (selectedChat.value && data.sender_id !== selectedChat.value.user_id) {
             isTyping.value = true;
         }
+      
     });
 
     socket.on('stop_typing', (data) => {
-        if (selectedChat.value && data.sender_id === selectedChat.value.user_id) {
+      console.log(data, "stop typing data");
+        if (selectedChat.value && data.sender_id !== selectedChat.value.user_id) {
             isTyping.value = false;
         }
     });
- 
+    requestNotificationPermission();
 });
 const closeSearch =(newvalue)=>{
   searchDialog.value = newvalue;
