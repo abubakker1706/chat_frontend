@@ -131,7 +131,7 @@
           date: item.createdAt,
         }));
         offlineMessage.value = '';
-        await syncIndexedDBToMongoDB(); // Sync IndexedDB data to MongoDB
+        await syncIndexedDBToMongoDB(); 
       } else {
         const products = await fetchFromIndexedDB();
         rowData.value = products.map(item => ({
