@@ -72,13 +72,13 @@ const showNotif = (position) => {
 };
 const eventRestrictions = {
   'Daily meeting': {
-    '2024-05-29': [
+    '2024-07-10': [
       { start: 23, end: 23 }, 
       { start: 9, end: 10 },   
     ],
   },
   'Learn DSA': {
-    '2024-05-29': [
+    '2024-07-10': [
       { start: 10, end: 11 }, 
       { start: 23, end: 23 }, 
     ],
